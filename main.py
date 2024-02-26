@@ -1,5 +1,5 @@
-"""Driver script to create all of the mzML files with the statistially significant peaks.
-
+"""Driver script to create all of the mzML files with the statistially significant peaks. Running this script creates
+the original dataset used in the MVAPCK paper. 
 
 Author: Chris Jurich <cjurich2@huskers.unl.edu>
 Date: 2022-04-17
@@ -26,15 +26,14 @@ def report_significant( mapper  : Dict[str,bool]) -> None:
 	print(f"RNG seed: {RNG_SEED}")
 
 def main():
-    #"""Driver function that reads in idealized files, creates"""
+    """Driver function that reads in idealized files, creates all nine versions of the simulated dataset. Values
+    for replicate setup, percent missing and noise are hard-coded but are altered here.
+    """
     np.random.seed( 100 )
     eics = pickle.load(open("data/eics-cpy2.pickle", "rb"))
     rts = eics[0].rts()
-    # probably need to fix the EIC namedtuple
     mapper = determine_significant(eics, 0.35)
-    #print(sum(list(mapper.values())))
-    #print(mapper)
-    report_significant( mapper );exit( 0 )
+    report_significant( mapper )
     replicates = {1: 10, 2: 10}
     for noise in [0, 0.05, 0.1]:
     	for pct_missing in [0, 0.10, 0.20]:

@@ -1,5 +1,11 @@
+"""A variety of utility functions for generating the synthetic data. Also defines the EIC and Scan namedtuple()'s
+
+Author: Chris Jurich <cjurich2@huskers.unl.edu>
+Date: 2024-02-26
+"""
 import os
 import numpy as np
+from typing import List, Dict
 from pathlib import Path
 from copy import deepcopy
 import matplotlib.pyplot as plt
@@ -9,23 +15,30 @@ from psims.mzml.writer import MzMLWriter
 np.random.seed(100)
 
 EIC = namedtuple("EIC", "name mzs rts its")
+EIC.__doc__ = "Data holder that defines a single extracted ion chromatogram. Works with ClassEIC objects. Has a str() name as well as arrays for mzs, rts and its."
+
 Scan = namedtuple("Scan", "id mz_array intensity_array rt")
+Scan.__doc__ = "Data holder that defines a single MS Scan. Has a single int() id, a float() rt, and an mz_array and intensity_array."
 
 
-def is_close(a, b, tol):
+def is_close(a:float, b:float, tol:float) -> bool:
+    """Are two numbers within the supplied tolerance?"""
 	return abs(a - b) <= tol
 
 
-def same_mz(a, b, tol=0.01):
+def same_mz(a:float, b:float, tol:float=0.01) -> bool:
+    """Are the two mz values equivalent within a default tolerance of 0.01?"""
 	return is_close(a, b, tol)
 
 
-def safe_mkdir(dirname):
+def safe_mkdir(dirname:str) -> None:
+    """Utility function to safely make a directory."""
 	if not os.path.isdir(dirname):
 		Path(dirname).mkdir(parents=True, exist_ok=True)
 
 
-def clone_eic(eic):
+def clone_eic(eic:EIC) -> EIC:
+    """Function to create a deep copy of an EIC namedtuple()"""
 	return EIC(
 		name=deepcopy(eic.name),
 		mzs=deepcopy(eic.mzs),
@@ -34,24 +47,38 @@ def clone_eic(eic):
 	)
 
 
-def apply_eic_multiplier(eic, mult):
+def apply_eic_multiplier(eic:"ClassEIC", mult:float) -> "ClassEIC":
+    """Apply an amplitude multiplier to the supplied EIC's intensities. i.e. it_new = it_old*mult"""
 	result = eic.clone()
 	result.multiplier(mult)
 	return result
 
 
-def cv(vals):
+def cv(vals:List[float]) -> float:
+    """Get the coeffiecient of variation of the supplied sequence of values."""
 	return np.std(vals) / np.mean(vals)
 
 
-def log_cv(vals):
+def log_cv(vals:List[float]) -> float:
+    """Get the base2 log of coeffiecient of variation of the supplied sequence of values."""
 	return cv(np.log2(vals))
 
 
-def log2FC( g1_vals, g2_vals ):
+def log2FC( g1_vals:List[float], g2_vals:List[float] ) -> float:
+    """Get the base2 log of fold change between two grousp of equal length values."""
 	return np.abs(np.mean(np.log2(g1_vals)) - np.mean(np.log2(g2_vals)))
 
-def generate_mults(num, is_sig, sig_cutoff):
+def generate_mults(num:int, is_sig:bool, sig_cutoff:float) -> List[float]:
+    """Driver function for creating group multipliers. 
+
+    Args:
+        num: number of values to create
+        is_sig: Should the values be significant? I.e. close in value to eachother
+        sig_cutoff: The cv cutoff for significance.
+
+    Returns:
+        The List[float] of multipliers.
+    """
 	if is_sig:
 		while True:
 			candidates = np.random.normal(loc=1, scale=sig_cutoff * 0.75, size=num)
@@ -64,7 +91,9 @@ def generate_mults(num, is_sig, sig_cutoff):
 				return candidates
 
 
-def determine_significant(eics, pct):
+def determine_significant(eics:List[EIC], pct:float) -> Dict[str, List[bool]]:
+    """Give a list of EIC namedtuple()'s and a percentage that should be significant, determine which 
+    chemicals will be significant."""
 	assert pct >= 0 and pct <= 1
 	# first, get the chem names
 	names = set()
