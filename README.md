@@ -34,11 +34,17 @@ Auxiliary script that creates the multipliers that will be combined with the eic
 By default makes 3000 non-significant multiplier sets and 1000 significant multiplier sets. Saves the results to
 `multipliers.csv`
 
+
+## `vimms/`
+
+The specially modified version of the ViMMS software package used in this data generation protocol to pull the EIC
+waveforms out of memory directly.
+
+
 ## `peak_graphs`
 
 Contains the individual peak waveforms that were analyzed during the course of creating the initial compound
 list for the simulated dataset.
-
 
 
 

@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+import os
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+from collections import defaultdict, namedtuple
+from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
+
+EIC = namedtuple('EIC', 'name mzs rts its')
+
+import numpy as np
+from scipy import sparse
+from scipy.sparse.linalg import spsolve
+
+def baseline_als(y, lam, p, niter=10):
+  L = len(y)
+  D = sparse.diags([1,-2,1],[0,-1,-2], shape=(L,L-2))
+  w = np.ones(L)
+  for i in range(niter):
+    W = sparse.spdiags(w, 0, L, L)
+    Z = W + lam * D.dot(D.transpose())
+    z = spsolve(Z, w*y)
+    w = p * (y > z) + (1-p) * (y < z)
+  return z
+
+def get_lines( fname ):
+    if not os.path.exists( fname ):
+        return []
+    fh = open( fname, 'r')
+    lines = fh.read().splitlines()
+    fh.close()
+    return lines
+
+def get_name( eic ):
+    return f"{eic.name},{eic.mzs[0]:.4f}"
+
+
+def select_compounds( rawnames ):
+    holder = defaultdict( list )
+    for rn in rawnames:
+        name,_ = rn.split(',')
+        holder[ name ].append( rn )
+
+    kept = list()
+    for clist in holder.values():
+        if len(clist ) > 1:
+            kept.extend( clist )
+
+    return set(kept)
+
+def has_baseline( eic ):
+    its, rts, mzs = eic.its, eic.rts, eic.mzs
+    mask = its > 0
+    its, rts, mzs = its[ mask ], rts[ mask ], mzs[ mask ]
+    max_idx = np.argmax( its )
+    left_slope, right_slope = [], [] 
+    for offset in range( 10 ): # maybe don't hardcode this?
+        left, right = offset, len( its )-1-offset
+        
+        if left + 1 < max_idx:
+            left_slope.append(abs(
+                (its[left+1]-its[left])/
+                (rts[left+1]-rts[left])
+                ))
+
+        if right - 1 > max_idx:
+            right_slope.append(abs(
+                (its[right]-its[right-1])/
+                (rts[right]-rts[right-1])
+                ))
+
+    return np.mean(np.array( left_slope )), np.mean(np.array( right_slope ))
+
+
+def gauss( x, a, b, c, d ):
+    return a*np.exp(-((x-b)**2)/c) + d
+
+def idealize_eic( eic ):
+    its, rts, mzs = eic.its, eic.rts, eic.mzs
+    highest = np.max( its )
+    mask = (its > 0) 
+    rts = rts[mask]
+    its = its[mask]
+    mzs = mzs[mask]
+    max_val = np.max( its )
+    max_it = np.argmax( its ) 
+    a = its[ max_it ] 
+    b = rts[ max_it ]
+    
+    params = curve_fit( gauss, rts, its, p0=(a,b,1,np.min(its)) )[0]
+    
+    if params[-1] > 0.01*max_val:
+        old = params[-1]
+        params[-1] = 0.01*max_val
+        params[0] += abs(old-params[-1])
+    
+    if params[-1] < 0:
+        params[-1] = 0.01*max_val
+    
+    return EIC( name=eic.name, 
+            its=gauss( eic.rts, *params ), 
+            mzs=eic.mzs, rts=eic.rts)
+
+def main( ):
+
+    kept_eics = select_compounds(get_lines( 'keep.txt' ))
+    eics = pickle.load(open('eics.pickle', 'rb'))
+    filt = list(filter(lambda eic: get_name( eic ) in kept_eics, eics))
+    filt = sorted( filt, key=lambda ee: ee.name )
+    # ok so we need to identify possible issues with this stuff.
+    # basically the main problem is there isn't any baseline 
+    # for a lot of these
+    idealized = []
+    for f in filt:
+        try:
+            idealized.append( idealize_eic( f ))
+        except:
+            pass
+    pickle.dump(idealized, open('eics-ideal.pickle', 'wb'))
+if __name__ == '__main__':
+    main( )

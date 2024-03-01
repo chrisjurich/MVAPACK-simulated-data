@@ -1,0 +1,6 @@
+vimms_data_generation/eics-ideal.pickle filter=lfs diff=lfs merge=lfs -text
+vimms_data_generation/template.pickle filter=lfs diff=lfs merge=lfs -text
+vimms_data_generation/eics.pickle filter=lfs diff=lfs merge=lfs -text
+eics-ideal.pickle filter=lfs diff=lfs merge=lfs -text
+template.pickle filter=lfs diff=lfs merge=lfs -text
+eics.pickle filter=lfs diff=lfs merge=lfs -text
