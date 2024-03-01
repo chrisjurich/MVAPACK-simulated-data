@@ -48,4 +48,6 @@ list for the simulated dataset.
 
 
 
+## `vimms_data_generation`
 
+This directory contains a number of scripts critical to creating the original EICs and idealizing them.
