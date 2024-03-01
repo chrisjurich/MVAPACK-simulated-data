@@ -23,6 +23,10 @@ Contains convenience functions and `namedtuple()` data holders that ease the cre
 dataset. There is a lot of talk about "significant" vs "non-significant" chemicals. This refers to 
 chemicals that have variantion across replicates that is statistically significant versus ones that do not.
 
+## `norm_eics.py`
+Helper script used just once to normalize the maximum peak of the compound to 1.0. Loads in eics from the `data/eics-cpy2.pickle`
+file and saves them back to that file.
+
 
 ## `mults.py`
 
@@ -34,7 +38,6 @@ By default makes 3000 non-significant multiplier sets and 1000 significant multi
 
 Contains the individual peak waveforms that were analyzed during the course of creating the initial compound
 list for the simulated dataset.
-
 
 
 
