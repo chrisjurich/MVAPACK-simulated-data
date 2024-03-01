@@ -21,3 +21,22 @@ files. Requires the following packages to run:
 
 Contains convenience functions and `namedtuple()` data holders that ease the creation of the synthetic 
 dataset. There is a lot of talk about "significant" vs "non-significant" chemicals. This refers to 
+chemicals that have variantion across replicates that is statistically significant versus ones that do not.
+
+
+## `mults.py`
+
+Auxiliary script that creates the multipliers that will be combined with the eics to create the master replicate. 
+By default makes 3000 non-significant multiplier sets and 1000 significant multiplier sets. Saves the results to
+`multipliers.csv`
+
+## `peak_graphs`
+
+Contains the individual peak waveforms that were analyzed during the course of creating the initial compound
+list for the simulated dataset.
+
+
+
+
+
+
