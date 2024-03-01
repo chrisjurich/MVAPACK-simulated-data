@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+# what do we need to do? 
+# 1. get all of the rt's first
+
+PRECISION = 10**4
+
+def roughly_equal( a, b, tol=0.001 ):
+    return abs( a - b ) <= tol
+
+class FloatSet:
+
+    def __init__( self ):
+        self.values = []
+        self.length = 0
+        self.idx = 0
+
+    def add( self, nval ):
+        self.values.append( nval )
+
+    def __iter__( self ):
+        self.values.sort( )
+        temp = [ self.values[0] ]
+        for vv in self.values[1:]:
+            if not roughly_equal( vv, temp[-1] ):
+                temp.append( vv )
+        self.values = temp
+        self.length = len( temp )
+        return self 
+
+    def __next__( self ):
+        if self.idx < self.length:
+            result = self.values[ self.idx ]
+            self.idx += 1
+            return result
+        else:
+            raise StopIteration 
+
+class RtMapper:
+
+    def __init__( self, fset ):
+        self.rt_to_idx_ = list( )
+        self.idx_to_rt_ = dict( )
+        
+        self.rts_ = list( fset )
+
+        for idx, rt in enumerate( self.rts_ ):
+            self.rt_to_idx_.append((rt, idx))
+            self.idx_to_rt_[ idx ] = rt
+
+        self.length_ = len( self.rts_ )
+
+    def rt_to_idx(self, nrt ):
+        assert isinstance(nrt, float)
+
+        for (rt, idx) in self.rt_to_idx_:
+            if roughly_equal(rt, nrt):
+                return idx
+        else:
+            raise TypeError('no match')
+    
+    def rts( self ):
+        return self.rts_
+
+    def idx_to_rt( self, idx ):
+        return self.idx_to_rt_[ idx ]
+
+    def length( self ):
+        return self.length_
+
+def zero_pad( data, rtmapper ):
+    new_res = dict( )
+    for chem, vals in data.items():
+        # first, get the unique mzs
+        mzset = FloatSet( )
+        for (rt, mz, it) in vals:
+            mzset.add( mz )
+
+        for mzval in mzset:
+            values = list(filter(lambda row: roughly_equal( row[1], mzval ), vals ))
+            new_rts, new_mzs, new_its = np.array(rtmapper.rts()), np.zeros(rtmapper.length()), np.zeros(rtmapper.length())
+            for (rt, mz, it) in vals:
+                idx = rtmapper.rt_to_idx( rt )
+                new_mzs[ idx ] = mz
+                new_its[ idx ] = it
+            new_res[(chem, mzval)] = (new_rts, new_mzs, new_its )
+    return new_res
+
+def rt_analysis( data ):
+    fset = FloatSet( )
+    for values in data.values():
+        for (rt, mz, it) in values:
+            fset.add( rt )
+    
+    return RtMapper( fset )
+
+def main( ):
+    data = pickle.load(open('peak_recorder.pickle', 'rb'))
+    rtmapper = rt_analysis( data )
+    padded = zero_pad( data, rtmapper )
+    print( padded.keys() )
+
+if __name__ == '__main__':
+    main( )
